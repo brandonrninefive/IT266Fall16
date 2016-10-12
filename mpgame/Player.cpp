@@ -1511,6 +1511,16 @@ void idPlayer::Init( void ) {
 	godmodeDamage			= 0;
 	undying					= g_forceUndying.GetBool() ? !gameLocal.isMultiplayer : false;
 
+	/*
+	=====================
+	Quakemon variable Init
+	======================
+	*/
+
+	inQuakemonFight			= false;
+	quakemonFightCooldown	= 0;
+	quakemonFightTargetPlayer = 0; //NULL by default
+
 	oldButtons				= 0;
 	oldFlags				= 0;
 
@@ -6573,10 +6583,39 @@ bool idPlayer::HandleSingleGuiCommand( idEntity *entityGui, idLexer *src ) {
 }
 
 /*
+================
+Quakemon Function Define
+================
+*/
+
+bool idPlayer::canJoinQuakemonFight()
+{
+	return (!this->inQuakemonFight && this->quakemonFightCooldown == 0);
+}
+
+void idPlayer::joinQuakemonFight(idPlayer* otherPlayer)
+{
+	gameLocal.Printf("Joined a quakemon fight!\n");
+	inQuakemonFight = true;
+	xyspeed = 0;
+	quakemonFightTargetPlayer = otherPlayer;
+	
+}
+
+void idPlayer::leaveQuakemonFight()
+{
+	gameLocal.Printf("Left a quakemon fight!\n");
+	inQuakemonFight = false;
+	quakemonFightCooldown = 360;
+	quakemonFightTargetPlayer = 0;
+}
+
+/*
 ==============
 idPlayer::Collide
 ==============
 */
+
 bool idPlayer::Collide( const trace_t &collision, const idVec3 &velocity ) {
 	idEntity *other;
 	other = gameLocal.entities[ collision.c.entityNum ];
@@ -6588,6 +6627,14 @@ bool idPlayer::Collide( const trace_t &collision, const idVec3 &velocity ) {
 
 
 	if ( other ) {
+		if(other->IsType(idPlayer::GetClassType()))
+		{
+			if(canJoinQuakemonFight() && ((idPlayer *)(other))->canJoinQuakemonFight())
+			{
+				joinQuakemonFight((idPlayer *)other);
+				((idPlayer *)(other))->joinQuakemonFight(this);
+			}
+		}
 		other->Signal( SIG_TOUCH );
 		if ( !spectating ) {
 			if ( other->RespondsTo( EV_Touch ) ) {
@@ -9315,6 +9362,12 @@ void idPlayer::Think( void ) {
 				talkingNPC = NULL;
 			}
 		}
+	}
+
+	if(!inQuakemonFight)
+	{
+		if(quakemonFightCooldown > 0)
+			quakemonFightCooldown--;
 	}
 
 	if ( !gameLocal.usercmds ) {
@@ -12503,6 +12556,7 @@ void idPlayer::ReadFromSnapshot( const idBitMsgDelta &msg ) {
 	int cash = msg.ReadLong();
 	if ( cash != (int)buyMenuCash ) {
 		buyMenuCash = (float)cash;
+
 		gameLocal.mpGame.RedrawLocalBuyMenu();
 	}
  	// no msg reading below this
@@ -12521,6 +12575,11 @@ void idPlayer::ReadFromSnapshot( const idBitMsgDelta &msg ) {
  			UpdateDeathSkin( true );
  		}
 		// die
+		if(inQuakemonFight)
+		{
+			quakemonFightTargetPlayer->leaveQuakemonFight();
+			leaveQuakemonFight();
+		}
 		pfl.dead = true;
 		ClearPowerUps();
 		SetAnimState( ANIMCHANNEL_LEGS, "Legs_Dead", 4 );

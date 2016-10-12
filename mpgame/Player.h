@@ -293,6 +293,16 @@ public:
 	int						godmodeDamage;
 	bool					undying;
 
+	/*
+	===================
+	Quakemon Variable Declaration
+	===================
+	*/
+
+	bool					inQuakemonFight;
+	int						quakemonFightCooldown;
+	idPlayer*				quakemonFightTargetPlayer;
+
 	bool					spawnAnglesSet;		// on first usercmd, we must set deltaAngles
 	idAngles				spawnAngles;
 	idAngles				viewAngles;			// player view angles
@@ -462,6 +472,16 @@ public:
 
 							// delta view angles to allow movers to rotate the view of the player
 	void					UpdateDeltaViewAngles( const idAngles &angles );
+
+/*
+=========================
+Quakemon Function Declare
+=========================
+*/
+
+	virtual bool			canJoinQuakemonFight();
+	virtual void			joinQuakemonFight(idPlayer *otherPlayer);
+	virtual void			leaveQuakemonFight(); 
 
 	virtual bool			Collide( const trace_t &collision, const idVec3 &velocity );
 
