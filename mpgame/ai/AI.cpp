@@ -1202,7 +1202,7 @@ void idAI::Think( void ) {
 			UpdateStates();
 
 			// run all movement commands
-			Move();
+		//	Move();
 
 			// if not dead, chatter and blink
 			if( move.moveType != MOVETYPE_DEAD ){
@@ -1648,7 +1648,7 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 
 	SetMoveType ( MOVETYPE_DEAD );
 
-	move.fl.noGravity = false;
+	move.fl.noGravity = true;
 	move.fl.allowPushMovables = false;
 	aifl.scripted = false;
 

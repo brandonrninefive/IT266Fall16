@@ -302,6 +302,7 @@ public:
 	bool					inQuakemonFight;
 	int						quakemonFightCooldown;
 	idPlayer*				quakemonFightTargetPlayer;
+	idEntity*				quakemonMonster;
 
 	bool					spawnAnglesSet;		// on first usercmd, we must set deltaAngles
 	idAngles				spawnAngles;

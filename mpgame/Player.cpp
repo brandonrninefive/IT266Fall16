@@ -1519,7 +1519,8 @@ void idPlayer::Init( void ) {
 
 	inQuakemonFight			= false;
 	quakemonFightCooldown	= 0;
-	quakemonFightTargetPlayer = 0; //NULL by default
+	quakemonFightTargetPlayer = 0;
+	quakemonMonster = 0;
 
 	oldButtons				= 0;
 	oldFlags				= 0;
@@ -6595,16 +6596,18 @@ bool idPlayer::canJoinQuakemonFight()
 
 void idPlayer::joinQuakemonFight(idPlayer* otherPlayer)
 {
-	gameLocal.Printf("Joined a quakemon fight!\n");
+	gameLocal.Printf("Player %s joined a quakemon fight!\n", GetUserInfo()->GetString("ui_name"));
 	inQuakemonFight = true;
-	xyspeed = 0;
 	quakemonFightTargetPlayer = otherPlayer;
-	
+	idDict args;
+	args.Set("origin", (GetPhysics()->GetOrigin() + idVec3(0,0,120)).ToString());
+	args.Set("classname", "monster_grunt");	
+	gameLocal.SpawnEntityDef(args, &quakemonMonster);
 }
 
 void idPlayer::leaveQuakemonFight()
 {
-	gameLocal.Printf("Left a quakemon fight!\n");
+	gameLocal.Printf("Player %s left a quakemon fight!\n", GetUserInfo()->GetString("ui_name"));
 	inQuakemonFight = false;
 	quakemonFightCooldown = 360;
 	quakemonFightTargetPlayer = 0;
@@ -6621,19 +6624,23 @@ bool idPlayer::Collide( const trace_t &collision, const idVec3 &velocity ) {
 	other = gameLocal.entities[ collision.c.entityNum ];
 
 	// allow client-side prediction of item collisions for simple client effects
-	if ( gameLocal.isClient && !other->IsType( idItem::GetClassType() ) ) {
-		return false;
+	if ( gameLocal.isClient && !other->IsType( idItem::GetClassType()) && !other->IsType(idPlayer::GetClassType())) {
+		return false; 
 	}
 
 
 	if ( other ) {
-		if(other->IsType(idPlayer::GetClassType()))
+		/*if(other->IsType(idPlayer::GetClassType()))
 		{
 			if(canJoinQuakemonFight() && ((idPlayer *)(other))->canJoinQuakemonFight())
 			{
 				joinQuakemonFight((idPlayer *)other);
 				((idPlayer *)(other))->joinQuakemonFight(this);
 			}
+		}*/
+		if(!inQuakemonFight)
+		{
+			joinQuakemonFight(0);
 		}
 		other->Signal( SIG_TOUCH );
 		if ( !spectating ) {
@@ -8755,7 +8762,10 @@ void idPlayer::AdjustSpeed( void ) {
 	if ( influenceActive == INFLUENCE_LEVEL3 ) {
 		speed *= 0.33f;
 	}
-
+	if(inQuakemonFight)
+	{
+		//speed = 5;
+	}
 	physicsObj.SetSpeed( speed, pm_crouchspeed.GetFloat() );
 }
 
@@ -10136,8 +10146,16 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	}
 
 	// damage is only processed on server
-	if ( gameLocal.isClient ) {
+	if ( gameLocal.isClient) {
 		return;
+	}
+
+	if(inQuakemonFight)
+	{
+		if(attacker != quakemonFightTargetPlayer || strcmp(damageDefName, "QuakemonDamage") != 0)
+		{
+			return;
+		}
 	}
 	
  	if ( !fl.takedamage || noclip || spectating || gameLocal.inCinematic ) {
