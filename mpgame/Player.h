@@ -483,6 +483,9 @@ Quakemon Function Declare
 	virtual bool			canJoinQuakemonFight();
 	virtual void			joinQuakemonFight(idPlayer *otherPlayer);
 	virtual void			leaveQuakemonFight(); 
+	virtual void			spawnQuakemonMonster();
+	virtual void			displayQuakemonUI();
+	virtual void			performQuakemonAttack(int attackNum);
 
 	virtual bool			Collide( const trace_t &collision, const idVec3 &velocity );
 

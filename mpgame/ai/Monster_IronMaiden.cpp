@@ -85,6 +85,7 @@ rvMonsterIronMaiden::Spawn
 */
 void rvMonsterIronMaiden::Spawn ( void ) {
 	// Custom actions
+	common->Printf("IronMaiden Spawned!\n");
 	actionBansheeAttack.Init ( spawnArgs, "action_bansheeAttack", "Torso_BansheeAttack", AIACTIONF_ATTACK );
 		
 	InitSpawnArgsVariables();

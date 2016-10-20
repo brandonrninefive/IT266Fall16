@@ -6597,12 +6597,11 @@ bool idPlayer::canJoinQuakemonFight()
 void idPlayer::joinQuakemonFight(idPlayer* otherPlayer)
 {
 	gameLocal.Printf("Player %s joined a quakemon fight!\n", GetUserInfo()->GetString("ui_name"));
+	GUIMainNotice( "You have joined a Quakemon battle!\n");
 	inQuakemonFight = true;
 	quakemonFightTargetPlayer = otherPlayer;
-	idDict args;
-	args.Set("origin", (GetPhysics()->GetOrigin() + idVec3(0,0,120)).ToString());
-	args.Set("classname", "monster_grunt");	
-	gameLocal.SpawnEntityDef(args, &quakemonMonster);
+	displayQuakemonUI();
+	spawnQuakemonMonster();
 }
 
 void idPlayer::leaveQuakemonFight()
@@ -6611,6 +6610,84 @@ void idPlayer::leaveQuakemonFight()
 	inQuakemonFight = false;
 	quakemonFightCooldown = 360;
 	quakemonFightTargetPlayer = 0;
+}
+
+void idPlayer::spawnQuakemonMonster()
+{
+	idStr monsterClassName;
+	switch(GetCurrentWeapon())
+	{
+	case 1:
+		monsterClassName = "monster_iron_maiden";
+			break;
+	case 2:
+		monsterClassName = "monster_convoy_ground";
+		break;
+	case 3:
+		monsterClassName = "monster_convoy_hover";
+		break;
+	case 4:
+		monsterClassName = "monster_fatty";
+		break;
+	case 5:
+		monsterClassName = "monster_gladiator";
+		break;
+	case 6:
+		monsterClassName = "monster_grunt";
+		break;
+	case 7:
+		monsterClassName = "monster_gunner";
+		break;
+	case 8:
+		monsterClassName = "monster_harvester";
+		break;
+	case 9:
+		monsterClassName = "monster_iron_maiden";
+		break;
+	default:
+		monsterClassName = "monster_grunt";
+		break;
+	}
+	//idDict dict;
+	//dict.Set("classname", monsterClassName.c_str());
+	//dict.Set("origin", (GetPhysics()->GetOrigin() + idVec3(0,0,120)).ToString());
+	//dict.SetInt("networkSync", 1);
+	//gameLocal.Printf("Attempting entity spawn...\n");
+	//if(!gameLocal.isClient)
+		//gameLocal.SpawnClientEntityDef(dict, (rvClientEntity **)(&quakemonMonster), false);
+}
+
+void idPlayer::displayQuakemonUI()
+{
+	idUserInterface* quakemonMenu = uiManager->FindGui( "guis/quakemon.gui", true, false, true );
+	quakemonMenu->Activate(true, gameLocal.time);
+	focusUI = quakemonMenu;
+	gameLocal.Printf("Found GUI: %d", uiManager->CheckGui("guis/quakemon.gui"));
+	//performQuakemonAttack(0);
+}
+
+void idPlayer::performQuakemonAttack(int attackNum)
+{
+	idStr attackStr;
+	switch(attackNum)
+	{
+	case 0:
+		attackStr = "damage_softfall";
+		break;
+	case 1:
+		attackStr = "damage_hardfall";
+		break;
+	case 2:
+		attackStr = "damage_noair";
+		break;
+	case 3:
+		attackStr = "dmg_shellshock";
+		break;
+	default:
+		attackStr = "damage_softfall";
+		break;
+	}
+	quakemonFightTargetPlayer->Damage(this,this,idVec3(0,0,0),attackStr.c_str(),1,0);
 }
 
 /*
@@ -6630,14 +6707,15 @@ bool idPlayer::Collide( const trace_t &collision, const idVec3 &velocity ) {
 
 
 	if ( other ) {
-		/*if(other->IsType(idPlayer::GetClassType()))
+		if(other->IsType(idPlayer::GetClassType()))
 		{
 			if(canJoinQuakemonFight() && ((idPlayer *)(other))->canJoinQuakemonFight())
 			{
 				joinQuakemonFight((idPlayer *)other);
 				((idPlayer *)(other))->joinQuakemonFight(this);
 			}
-		}*/
+		}
+		//DEBUG Code
 		if(!inQuakemonFight)
 		{
 			joinQuakemonFight(0);
@@ -8764,7 +8842,7 @@ void idPlayer::AdjustSpeed( void ) {
 	}
 	if(inQuakemonFight)
 	{
-		//speed = 5;
+		speed = 0;
 	}
 	physicsObj.SetSpeed( speed, pm_crouchspeed.GetFloat() );
 }
@@ -9564,6 +9642,7 @@ void idPlayer::Think( void ) {
 
 	// if we have an active gui, we will unrotate the view angles as
 	// we turn the mouse movements into gui events
+
 	idUserInterface *gui = ActiveGui();
 	if ( gui && gui != focusUI ) {
 		RouteGuiMouse( gui );
@@ -10146,15 +10225,19 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	}
 
 	// damage is only processed on server
-	if ( gameLocal.isClient) {
+	if ( gameLocal.isClient || !inQuakemonFight) {
 		return;
 	}
 
 	if(inQuakemonFight)
 	{
-		if(attacker != quakemonFightTargetPlayer || strcmp(damageDefName, "QuakemonDamage") != 0)
+		if(attacker != quakemonFightTargetPlayer || strcmp(damageDefName, "damage_softfall") != 0)
 		{
 			return;
+		}
+		else
+		{
+			gameLocal.Printf("Damage processed!\n");
 		}
 	}
 	
