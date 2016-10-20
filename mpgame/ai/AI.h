@@ -442,6 +442,7 @@ public:
 
 	void					Spawn							( void );
 	virtual void			TalkTo							( idActor *actor );
+	virtual	void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
 
 	idEntity*				GetEnemy						( void ) const;
  	idEntity*				GetGoalEntity					( void ) const;
@@ -522,6 +523,13 @@ public:
 	int						focusAlignTime;
 	int						focusTime;
 	idVec3					currentFocusPos;
+
+	/*
+	=================
+	Quakemon Variables
+	=================
+	*/
+	bool					isQuakemonMonster;
 
 	// Looking
 	bool					allowJointMod;

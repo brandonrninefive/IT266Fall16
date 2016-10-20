@@ -63,6 +63,13 @@ idAI::idAI ( void ) {
 	enemy.lastVisibleChangeTime	= 0;
 	enemy.lastVisibleTime		= 0;
 
+	/*
+	=================
+	Quakemon Variables
+	=================
+	*/
+	isQuakemonMonster		= false;
+
 	fl.neverDormant			= false;		// AI's can go dormant
 
 	allowEyeFocus			= true;
@@ -618,6 +625,7 @@ void idAI::Spawn( void ) {
 
 	spawnArgs.GetInt(	"team",					"1",		team );
 	spawnArgs.GetInt(	"rank",					"0",		rank );
+	spawnArgs.GetBool(	"quakemonMonster",		"false",	isQuakemonMonster);
 
 	animPrefix = spawnArgs.GetString ( "animPrefix", "" );
 
@@ -5119,6 +5127,14 @@ idAI::IsCrouching
 */
 bool idAI::IsCrouching( void ) const {
 	return move.fl.crouching;
+}
+
+void idAI::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location )
+{
+	if(!isQuakemonMonster)
+	{
+		idActor::Damage(inflictor, attacker, dir, damageDefName, damageScale, location);
+	}
 }
 
 bool idAI::CheckDeathCausesMissionFailure( void )

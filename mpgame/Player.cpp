@@ -6600,7 +6600,8 @@ void idPlayer::joinQuakemonFight(idPlayer* otherPlayer)
 	GUIMainNotice( "You have joined a Quakemon battle!\n");
 	inQuakemonFight = true;
 	quakemonFightTargetPlayer = otherPlayer;
-	displayQuakemonUI();
+	//if(otherPlayer != gameLocal.GetLocalPlayer())
+		//displayQuakemonUI();
 	spawnQuakemonMonster();
 }
 
@@ -6610,6 +6611,8 @@ void idPlayer::leaveQuakemonFight()
 	inQuakemonFight = false;
 	quakemonFightCooldown = 360;
 	quakemonFightTargetPlayer = 0;
+	delete quakemonMonster;
+	quakemonMonster = 0;
 }
 
 void idPlayer::spawnQuakemonMonster()
@@ -6648,21 +6651,23 @@ void idPlayer::spawnQuakemonMonster()
 		monsterClassName = "monster_grunt";
 		break;
 	}
-	//idDict dict;
-	//dict.Set("classname", monsterClassName.c_str());
-	//dict.Set("origin", (GetPhysics()->GetOrigin() + idVec3(0,0,120)).ToString());
-	//dict.SetInt("networkSync", 1);
-	//gameLocal.Printf("Attempting entity spawn...\n");
-	//if(!gameLocal.isClient)
-		//gameLocal.SpawnClientEntityDef(dict, (rvClientEntity **)(&quakemonMonster), false);
+	monsterClassName = "monster_iron_maiden";
+	idDict dict;
+	dict.Set("classname", monsterClassName.c_str());
+	dict.Set("origin", (GetPhysics()->GetOrigin() + idVec3(0,0,120)).ToString());
+	dict.SetInt("networkSync", 1);
+	dict.SetBool("quakemonMonster", true);
+	gameLocal.Printf("Attempting entity spawn...\n");
+	gameLocal.SpawnEntityDef(monsterClassName.c_str(), &dict);
 }
 
 void idPlayer::displayQuakemonUI()
 {
-	idUserInterface* quakemonMenu = uiManager->FindGui( "guis/quakemon.gui", true, false, true );
+	idUserInterface* quakemonMenu = uiManager->FindGui( "guis/mpmain.gui", true, false, true );
 	quakemonMenu->Activate(true, gameLocal.time);
 	focusUI = quakemonMenu;
-	gameLocal.Printf("Found GUI: %d", uiManager->CheckGui("guis/quakemon.gui"));
+	gameLocal.Printf("Found GUI: %d", uiManager->CheckGui("guis/mpmain.gui"));
+	
 	//performQuakemonAttack(0);
 }
 
@@ -6716,10 +6721,10 @@ bool idPlayer::Collide( const trace_t &collision, const idVec3 &velocity ) {
 			}
 		}
 		//DEBUG Code
-		if(!inQuakemonFight)
+		/*if(!inQuakemonFight)
 		{
 			joinQuakemonFight(0);
-		}
+		}*/
 		other->Signal( SIG_TOUCH );
 		if ( !spectating ) {
 			if ( other->RespondsTo( EV_Touch ) ) {
@@ -7194,6 +7199,7 @@ void idPlayer::UpdateFocus( void ) {
 				rvVehicle* vehicle = static_cast<rvVehicle*>(ent);
 					// dluetscher: added optimization to eliminate redundant traces
 				if ( bboxTrace.fraction == -1 ) {
+
 					gameLocal.TracePoint( this, bboxTrace, start, end, MASK_SHOT_BOUNDINGBOX, this );
 				}
 				if ( ( bboxTrace.fraction < 1.0f ) && ( bboxTrace.c.entityNum == ent->entityNumber ) && ((end - start).Length() * bboxTrace.fraction < vehicle->FocusLength()) ) {
