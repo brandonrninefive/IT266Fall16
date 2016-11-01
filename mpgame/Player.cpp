@@ -1518,6 +1518,8 @@ void idPlayer::Init( void ) {
 	*/
 
 	inQuakemonFight			= false;
+	isQuakemonTurn			= false;
+	quakemonFightOrder		= -1;
 	quakemonFightCooldown	= 0;
 	quakemonFightTargetPlayer = 0;
 	quakemonMonster = 0;
@@ -6599,18 +6601,30 @@ void idPlayer::joinQuakemonFight(idPlayer* otherPlayer)
 	gameLocal.Printf("Player %s joined a quakemon fight!\n", GetUserInfo()->GetString("ui_name"));
 	GUIMainNotice( "You have joined a Quakemon battle!\n");
 	inQuakemonFight = true;
+	physicsObj.SetMaxJumpHeight(0);
 	quakemonFightTargetPlayer = otherPlayer;
-	//if(otherPlayer != gameLocal.GetLocalPlayer())
-		//displayQuakemonUI();
+	if(quakemonFightOrder == -1)
+	{
+		quakemonFightOrder = 0;
+		//otherPlayer->quakemonFightOrder = 1;
+		isQuakemonTurn = true;
+	}
 	spawnQuakemonMonster();
 }
 
 void idPlayer::leaveQuakemonFight()
 {
+	if(health > 0)
+		GUIMainNotice( "You won the Quakemon battle!\n");
+	else
+		GUIMainNotice("You lost the Quakemon battle!\n");
 	gameLocal.Printf("Player %s left a quakemon fight!\n", GetUserInfo()->GetString("ui_name"));
 	inQuakemonFight = false;
+	isQuakemonTurn = false;
+	physicsObj.SetMaxJumpHeight( pm_jumpheight.GetFloat() );
 	quakemonFightCooldown = 360;
 	quakemonFightTargetPlayer = 0;
+	quakemonFightOrder = -1;
 	delete quakemonMonster;
 	quakemonMonster = 0;
 }
@@ -6620,55 +6634,45 @@ void idPlayer::spawnQuakemonMonster()
 	idStr monsterClassName;
 	switch(GetCurrentWeapon())
 	{
-	case 1:
+	case 0:
 		monsterClassName = "monster_iron_maiden";
 			break;
-	case 2:
+	case 1:
 		monsterClassName = "monster_convoy_ground";
 		break;
-	case 3:
-		monsterClassName = "monster_convoy_hover";
+	case 2:
+		monsterClassName = "monster_scientist";
 		break;
-	case 4:
+	case 3:
 		monsterClassName = "monster_fatty";
 		break;
-	case 5:
+	case 4:
 		monsterClassName = "monster_gladiator";
 		break;
-	case 6:
+	case 5:
 		monsterClassName = "monster_grunt";
 		break;
-	case 7:
+	case 6:
 		monsterClassName = "monster_gunner";
 		break;
-	case 8:
-		monsterClassName = "monster_harvester";
+	case 7:
+		monsterClassName = "monster_slimy_transfer";
 		break;
-	case 9:
-		monsterClassName = "monster_iron_maiden";
+	case 8:
+		monsterClassName = "monster_sentry";
 		break;
 	default:
-		monsterClassName = "monster_grunt";
+		monsterClassName = "monster_turret";
 		break;
 	}
-	monsterClassName = "monster_iron_maiden";
 	idDict dict;
 	dict.Set("classname", monsterClassName.c_str());
 	dict.Set("origin", (GetPhysics()->GetOrigin() + idVec3(0,0,120)).ToString());
 	dict.SetInt("networkSync", 1);
 	dict.SetBool("quakemonMonster", true);
-	gameLocal.Printf("Attempting entity spawn...\n");
+	dict.Set("gravityDir", "0 0 0");
+	gameLocal.Printf("Attempting to spawn the entity '%s' above player '%s'...\n", monsterClassName.c_str(), GetUserInfo()->GetString( "ui_name" ));
 	gameLocal.SpawnEntityDef(monsterClassName.c_str(), &dict);
-}
-
-void idPlayer::displayQuakemonUI()
-{
-	idUserInterface* quakemonMenu = uiManager->FindGui( "guis/mpmain.gui", true, false, true );
-	quakemonMenu->Activate(true, gameLocal.time);
-	focusUI = quakemonMenu;
-	gameLocal.Printf("Found GUI: %d", uiManager->CheckGui("guis/mpmain.gui"));
-	
-	//performQuakemonAttack(0);
 }
 
 void idPlayer::performQuakemonAttack(int attackNum)
@@ -6712,19 +6716,19 @@ bool idPlayer::Collide( const trace_t &collision, const idVec3 &velocity ) {
 
 
 	if ( other ) {
-		if(other->IsType(idPlayer::GetClassType()))
+		/*if(other->IsType(idPlayer::GetClassType()))
 		{
 			if(canJoinQuakemonFight() && ((idPlayer *)(other))->canJoinQuakemonFight())
 			{
 				joinQuakemonFight((idPlayer *)other);
 				((idPlayer *)(other))->joinQuakemonFight(this);
 			}
-		}
+		}*/
 		//DEBUG Code
-		/*if(!inQuakemonFight)
+		if(!inQuakemonFight)
 		{
 			joinQuakemonFight(0);
-		}*/
+		}
 		other->Signal( SIG_TOUCH );
 		if ( !spectating ) {
 			if ( other->RespondsTo( EV_Touch ) ) {
@@ -9109,7 +9113,9 @@ void idPlayer::Move( void ) {
 
 	// set physics variables
 	physicsObj.SetMaxStepHeight( pm_stepsize.GetFloat() );
-	physicsObj.SetMaxJumpHeight( pm_jumpheight.GetFloat() );
+	
+	if(!inQuakemonFight)
+		physicsObj.SetMaxJumpHeight( pm_jumpheight.GetFloat() );
 
 	if ( noclip ) {
 		physicsObj.SetContents( 0 );

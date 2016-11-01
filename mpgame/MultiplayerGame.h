@@ -207,6 +207,7 @@ typedef struct mpPlayerState_s {
 	int				wins;
 	playerVote_t	vote;			// player's vote
 	bool			scoreBoardUp;	// toggle based on player scoreboard button, used to activate de-activate the scoreboard gui
+	bool			quakemonMenuUp;
 	bool			ingame;
 } mpPlayerState_t;
 
@@ -714,6 +715,7 @@ private:
 	idUserInterface *buyMenu;				// buy menu
 // RITUAL END
 	idUserInterface *scoreBoard;			// scoreboard
+	idUserInterface *quakemonMenu;
 	idUserInterface *mainGui;				// ready / nick / votes etc.
 	idListGUI		*mapList;
 	idUserInterface *msgmodeGui;			// message mode
@@ -782,6 +784,7 @@ private:
 	
 	// ddynerman: gametype specific scoreboard
 	void			UpdateScoreboard( idUserInterface *scoreBoard );
+	void			UpdateQuakemonMenu(idUserInterface * menu);
 
 	void			UpdateDMScoreboard( idUserInterface *scoreBoard );
 	void			UpdateTeamScoreboard( idUserInterface *scoreBoard );
@@ -819,6 +822,7 @@ private:
 	void			UpdateLeader( idPlayer* oldLeader );
 
 	void			ClearGuis( void );
+	void			DrawQuakemonMenu( idPlayer *player );
 	void			DrawScoreBoard( idPlayer *player );
 	void			CheckVote( void );
 	bool			AllPlayersReady( idStr* reason = NULL );

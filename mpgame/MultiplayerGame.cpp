@@ -80,6 +80,7 @@ idMultiplayerGame::idMultiplayerGame() {
 	buyMenu = NULL;
 // RITUAL END
 	scoreBoard = NULL;
+	quakemonMenu = NULL;
 	statSummary = NULL;
 	mainGui = NULL;
 	mapList = NULL;
@@ -156,6 +157,7 @@ void idMultiplayerGame::Reset() {
 // RITUAL END
 	PACIFIER_UPDATE;
 	scoreBoard = uiManager->FindGui( "guis/scoreboard.gui", true, false, true );
+	quakemonMenu = uiManager->FindGui( "guis/quakemon.gui", true, false, true);
 
 #ifdef _XENON
 	statSummary = scoreBoard;
@@ -842,6 +844,13 @@ void idMultiplayerGame::UpdateScoreboard( idUserInterface *scoreBoard ) {
 		UpdateDMScoreboard( scoreBoard );
 	}
 
+
+	return;
+}
+
+void idMultiplayerGame::UpdateQuakemonMenu(idUserInterface * menu)
+{
+	quakemonMenu->Redraw(gameLocal.time);
 	return;
 }
 
@@ -5111,6 +5120,7 @@ bool idMultiplayerGame::Draw( int clientNum ) {
 		}
 #endif
 		DrawScoreBoard( player );
+		DrawQuakemonMenu( player );
 	}
 
 // RAVEN BEGIN
@@ -5404,6 +5414,36 @@ void idMultiplayerGame::UpdateHud( idUserInterface* _mphud ) {
 	//update awards
 	if ( gameLocal.isClient || gameLocal.isListenServer) {
 		statManager->CheckAwardQueue();
+	}
+}
+
+/*
+====================
+Quakemon functions
+====================
+*/
+
+void idMultiplayerGame::DrawQuakemonMenu( idPlayer *player)
+{
+	if(player->isQuakemonTurn)
+	{
+		if ( !playerState[ player->entityNumber ].quakemonMenuUp ) {
+		playerState[player->entityNumber].quakemonMenuUp = true;
+		gameLocal.Printf("Found quakemon menu: %i\n", uiManager->CheckGui("guis/quakemon.gui"));
+		gameLocal.Printf("Drew quakemon menu!\n");
+		quakemonMenu->Activate( true, gameLocal.time );
+		player->disableHud = true;
+		}
+		UpdateQuakemonMenu( quakemonMenu );
+	}
+	else
+	{
+		if ( playerState[ player->entityNumber ].quakemonMenuUp ) {
+		playerState[player->entityNumber].quakemonMenuUp = false;
+		gameLocal.Printf("Hid Quakemon menu!\n");
+		quakemonMenu->Activate( false, gameLocal.time );
+		player->disableHud = false;
+		}
 	}
 }
 

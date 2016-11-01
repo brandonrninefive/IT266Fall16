@@ -300,6 +300,8 @@ public:
 	*/
 
 	bool					inQuakemonFight;
+	bool					isQuakemonTurn;
+	int						quakemonFightOrder;
 	int						quakemonFightCooldown;
 	idPlayer*				quakemonFightTargetPlayer;
 	idEntity*				quakemonMonster;
@@ -484,7 +486,6 @@ Quakemon Function Declare
 	virtual void			joinQuakemonFight(idPlayer *otherPlayer);
 	virtual void			leaveQuakemonFight(); 
 	virtual void			spawnQuakemonMonster();
-	virtual void			displayQuakemonUI();
 	virtual void			performQuakemonAttack(int attackNum);
 
 	virtual bool			Collide( const trace_t &collision, const idVec3 &velocity );
