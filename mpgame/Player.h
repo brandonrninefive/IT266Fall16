@@ -301,6 +301,8 @@ public:
 
 	bool					inQuakemonFight;
 	bool					isQuakemonTurn;
+	bool					quakemonKeyDown;
+	char					quakemonKey;
 	int						quakemonFightOrder;
 	int						quakemonFightCooldown;
 	idPlayer*				quakemonFightTargetPlayer;

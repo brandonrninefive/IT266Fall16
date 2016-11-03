@@ -1519,6 +1519,7 @@ void idPlayer::Init( void ) {
 
 	inQuakemonFight			= false;
 	isQuakemonTurn			= false;
+	quakemonKeyDown			= false;
 	quakemonFightOrder		= -1;
 	quakemonFightCooldown	= 0;
 	quakemonFightTargetPlayer = 0;
@@ -6593,7 +6594,7 @@ Quakemon Function Define
 
 bool idPlayer::canJoinQuakemonFight()
 {
-	return (!this->inQuakemonFight && this->quakemonFightCooldown == 0);
+	return (!this->inQuakemonFight && this->quakemonFightCooldown == 0 && this->health > 0);
 }
 
 void idPlayer::joinQuakemonFight(idPlayer* otherPlayer)
@@ -6606,7 +6607,7 @@ void idPlayer::joinQuakemonFight(idPlayer* otherPlayer)
 	if(quakemonFightOrder == -1)
 	{
 		quakemonFightOrder = 0;
-		//otherPlayer->quakemonFightOrder = 1;
+		otherPlayer->quakemonFightOrder = 1;
 		isQuakemonTurn = true;
 	}
 	spawnQuakemonMonster();
@@ -6614,6 +6615,7 @@ void idPlayer::joinQuakemonFight(idPlayer* otherPlayer)
 
 void idPlayer::leaveQuakemonFight()
 {
+	gameLocal.Printf("Ran leave quakemon fight!\n");
 	if(health > 0)
 		GUIMainNotice( "You won the Quakemon battle!\n");
 	else
@@ -6621,11 +6623,11 @@ void idPlayer::leaveQuakemonFight()
 	gameLocal.Printf("Player %s left a quakemon fight!\n", GetUserInfo()->GetString("ui_name"));
 	inQuakemonFight = false;
 	isQuakemonTurn = false;
-	physicsObj.SetMaxJumpHeight( pm_jumpheight.GetFloat() );
 	quakemonFightCooldown = 360;
-	quakemonFightTargetPlayer = 0;
 	quakemonFightOrder = -1;
-	delete quakemonMonster;
+	physicsObj.SetMaxJumpHeight( pm_jumpheight.GetFloat() );
+	quakemonFightTargetPlayer = 0;
+	//quakemonMonster->Damage(quakemonMonster, quakemonMonster, idVec3(0,0,0), "damage_", 1, 0);
 	quakemonMonster = 0;
 }
 
@@ -6638,31 +6640,31 @@ void idPlayer::spawnQuakemonMonster()
 		monsterClassName = "monster_iron_maiden";
 			break;
 	case 1:
-		monsterClassName = "monster_convoy_ground";
-		break;
-	case 2:
 		monsterClassName = "monster_scientist";
 		break;
-	case 3:
-		monsterClassName = "monster_fatty";
-		break;
-	case 4:
+	case 2:
 		monsterClassName = "monster_gladiator";
 		break;
-	case 5:
+	case 3:
 		monsterClassName = "monster_grunt";
 		break;
+	case 4:
+		monsterClassName = "monster_iron_maiden";
+		break;
+	case 5:
+		monsterClassName = "monster_scientist";
+		break;
 	case 6:
-		monsterClassName = "monster_gunner";
+		monsterClassName = "monster_gladiator";
 		break;
 	case 7:
-		monsterClassName = "monster_slimy_transfer";
+		monsterClassName = "monster_grunt";
 		break;
 	case 8:
-		monsterClassName = "monster_sentry";
+		monsterClassName = "monster_iron_maiden";
 		break;
 	default:
-		monsterClassName = "monster_turret";
+		monsterClassName = "monster_scientist";
 		break;
 	}
 	idDict dict;
@@ -6670,7 +6672,6 @@ void idPlayer::spawnQuakemonMonster()
 	dict.Set("origin", (GetPhysics()->GetOrigin() + idVec3(0,0,120)).ToString());
 	dict.SetInt("networkSync", 1);
 	dict.SetBool("quakemonMonster", true);
-	dict.Set("gravityDir", "0 0 0");
 	gameLocal.Printf("Attempting to spawn the entity '%s' above player '%s'...\n", monsterClassName.c_str(), GetUserInfo()->GetString( "ui_name" ));
 	gameLocal.SpawnEntityDef(monsterClassName.c_str(), &dict);
 }
@@ -6678,25 +6679,37 @@ void idPlayer::spawnQuakemonMonster()
 void idPlayer::performQuakemonAttack(int attackNum)
 {
 	idStr attackStr;
+	float mult;
 	switch(attackNum)
 	{
 	case 0:
 		attackStr = "damage_softfall";
+		mult = 1;
 		break;
 	case 1:
 		attackStr = "damage_hardfall";
+		mult = 4;
 		break;
 	case 2:
 		attackStr = "damage_noair";
+		mult = 1;
 		break;
 	case 3:
 		attackStr = "dmg_shellshock";
+		mult = 1;
 		break;
 	default:
 		attackStr = "damage_softfall";
+		mult = 1;
 		break;
 	}
-	quakemonFightTargetPlayer->Damage(this,this,idVec3(0,0,0),attackStr.c_str(),1,0);
+
+	quakemonFightTargetPlayer->Damage(this,this,idVec3(0,0,0),attackStr.c_str(),mult,0);
+	if(inQuakemonFight)
+	{
+		isQuakemonTurn = false;
+		quakemonFightTargetPlayer->isQuakemonTurn = true;
+	}
 }
 
 /*
@@ -6716,19 +6729,19 @@ bool idPlayer::Collide( const trace_t &collision, const idVec3 &velocity ) {
 
 
 	if ( other ) {
-		/*if(other->IsType(idPlayer::GetClassType()))
+		if(other->IsType(idPlayer::GetClassType()))
 		{
 			if(canJoinQuakemonFight() && ((idPlayer *)(other))->canJoinQuakemonFight())
 			{
 				joinQuakemonFight((idPlayer *)other);
 				((idPlayer *)(other))->joinQuakemonFight(this);
 			}
-		}*/
+		}
 		//DEBUG Code
-		if(!inQuakemonFight)
+		/*if(!inQuakemonFight)
 		{
 			joinQuakemonFight(0);
-		}
+		}*/
 		other->Signal( SIG_TOUCH );
 		if ( !spectating ) {
 			if ( other->RespondsTo( EV_Touch ) ) {
@@ -8845,6 +8858,53 @@ void idPlayer::AdjustSpeed( void ) {
 		bobFrac = 0.0f;
 	}
 
+	if(inQuakemonFight && isQuakemonTurn)
+	{
+		if(usercmd.forwardmove > 0 && !quakemonKeyDown)
+		{
+			performQuakemonAttack(0);
+			quakemonKeyDown = true;
+			quakemonKey = 'w';
+		}
+		else if(usercmd.forwardmove == 0 && quakemonKeyDown && quakemonKey == 'w')
+		{
+			quakemonKeyDown = false;
+		}
+
+		if(usercmd.forwardmove < 0 && !quakemonKeyDown)
+		{
+			performQuakemonAttack(2);
+			quakemonKeyDown = true;
+			quakemonKey = 's';
+		}
+		else if(quakemonKeyDown && quakemonKey == 's')
+		{
+			quakemonKeyDown = false;
+		}
+
+		if(usercmd.rightmove < 0 && !quakemonKeyDown)
+		{
+			performQuakemonAttack(1);
+			quakemonKeyDown = true;
+			quakemonKey = 'a';
+		}
+		else if(quakemonKeyDown && quakemonKey == 'a')
+		{
+			quakemonKeyDown = false;
+		}
+
+		if(usercmd.rightmove > 0 && !quakemonKeyDown)
+		{
+			performQuakemonAttack(3);
+			quakemonKeyDown = true;
+			quakemonKey = 'd';
+		}
+		else if(quakemonKeyDown && quakemonKey == 'd')
+		{
+			quakemonKeyDown = false;
+		}
+	}
+
 	speed *= PowerUpModifier(PMOD_SPEED);
 
 	if ( influenceActive == INFLUENCE_LEVEL3 ) {
@@ -9468,6 +9528,8 @@ void idPlayer::Think( void ) {
 	{
 		if(quakemonFightCooldown > 0)
 			quakemonFightCooldown--;
+		if(quakemonFightCooldown == 1)
+			gameLocal.Printf("Quakemon cooldown has ended!\n");
 	}
 
 	if ( !gameLocal.usercmds ) {
@@ -10243,7 +10305,7 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 
 	if(inQuakemonFight)
 	{
-		if(attacker != quakemonFightTargetPlayer || strcmp(damageDefName, "damage_softfall") != 0)
+		if(attacker != quakemonFightTargetPlayer || (strcmp(damageDefName, "damage_softfall") != 0 && strcmp(damageDefName, "damage_hardfall") != 0 && strcmp(damageDefName, "damage_noair") != 0 && strcmp(damageDefName, "dmg_shellshock") != 0))
 		{
 			return;
 		}
@@ -10418,8 +10480,16 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		}
 
 		int oldHealth = health;
+		if(health - damage <= 0)
+		{
+			if(inQuakemonFight)
+			{
+				quakemonFightTargetPlayer->leaveQuakemonFight();
+				leaveQuakemonFight();
+			}
+		}
 		health -= damage;
-
+		
 		GAMELOG_ADD ( va("player%d_damage_taken", entityNumber ), damage );
 		GAMELOG_ADD ( va("player%d_damage_%s", entityNumber, damageDefName), damage );
 
@@ -12504,6 +12574,10 @@ void idPlayer::WriteToSnapshot( idBitMsgDelta &msg ) const {
 	msg.WriteDeltaFloat( 0.0f, deltaViewAngles[0] );
 	msg.WriteDeltaFloat( 0.0f, deltaViewAngles[1] );
 	msg.WriteDeltaFloat( 0.0f, deltaViewAngles[2] );
+	msg.WriteBits(inQuakemonFight, 1);
+	msg.WriteBits(isQuakemonTurn, 1);
+	msg.WriteBits(quakemonFightCooldown, 32);
+	msg.WriteBits(quakemonFightOrder, 32);
 	msg.WriteShort( health );
 	msg.WriteByte( inventory.armor );
  	msg.WriteBits( lastDamageDef, gameLocal.entityDefBits );
@@ -12539,7 +12613,7 @@ void idPlayer::ReadFromSnapshot( const idBitMsgDelta &msg ) {
 	assert( !IsFakeClient() );
 
  	int		i, oldHealth, newIdealWeapon, weaponSpawnId, weaponWorldSpawnId;
-	bool	stateHitch;
+	bool	stateHitch, oldInQuakemonFight;
 	int		lastKillerEntity;
 
  	if ( snapshotSequence - lastSnapshotSequence > 1 ) {
@@ -12549,6 +12623,7 @@ void idPlayer::ReadFromSnapshot( const idBitMsgDelta &msg ) {
  	}
  	lastSnapshotSequence = snapshotSequence;
 
+	oldInQuakemonFight = inQuakemonFight;
 	oldHealth = health;
 
 	physicsObj.ReadFromSnapshot( msg );
@@ -12556,6 +12631,12 @@ void idPlayer::ReadFromSnapshot( const idBitMsgDelta &msg ) {
 	deltaViewAngles[0] = msg.ReadDeltaFloat( 0.0f );
 	deltaViewAngles[1] = msg.ReadDeltaFloat( 0.0f );
 	deltaViewAngles[2] = msg.ReadDeltaFloat( 0.0f );
+	inQuakemonFight = msg.ReadBits(1);
+	gameLocal.Printf("In quakemon fight: %i", inQuakemonFight);
+	isQuakemonTurn = msg.ReadBits(1);
+	quakemonFightCooldown = msg.ReadBits(32);
+	quakemonFightOrder = msg.ReadBits(32);
+	
 	health = msg.ReadShort();
 	inventory.armor = msg.ReadByte();
  	lastDamageDef = msg.ReadBits( gameLocal.entityDefBits );
@@ -12567,6 +12648,7 @@ void idPlayer::ReadFromSnapshot( const idBitMsgDelta &msg ) {
  	weaponWorldSpawnId = msg.ReadBits( 32 );
 	int latchedSpectator = spectator;
 	spectator = msg.ReadBits( idMath::BitsForInteger( MAX_CLIENTS ) );
+
 	if ( spectating && latchedSpectator != spectator ) {
 		// don't do any smoothing with this snapshot
 		predictedFrame = gameLocal.framenum;
@@ -12688,11 +12770,7 @@ void idPlayer::ReadFromSnapshot( const idBitMsgDelta &msg ) {
  			UpdateDeathSkin( true );
  		}
 		// die
-		if(inQuakemonFight)
-		{
-			quakemonFightTargetPlayer->leaveQuakemonFight();
-			leaveQuakemonFight();
-		}
+		
 		pfl.dead = true;
 		ClearPowerUps();
 		SetAnimState( ANIMCHANNEL_LEGS, "Legs_Dead", 4 );

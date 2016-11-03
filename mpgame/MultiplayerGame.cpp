@@ -4913,6 +4913,7 @@ const char* idMultiplayerGame::HandleGuiCommands( const char *_menuCommand ) {
 			while ( kv ) {
 				if ( kv->GetValue() == currentCrosshair.c_str() ) {
 					kv = def->dict.MatchPrefix("mtr_crosshair", kv );
+
 					break;
 				}
 				kv = def->dict.MatchPrefix("mtr_crosshair", kv );
@@ -5432,6 +5433,7 @@ void idMultiplayerGame::DrawQuakemonMenu( idPlayer *player)
 		gameLocal.Printf("Found quakemon menu: %i\n", uiManager->CheckGui("guis/quakemon.gui"));
 		gameLocal.Printf("Drew quakemon menu!\n");
 		quakemonMenu->Activate( true, gameLocal.time );
+		
 		player->disableHud = true;
 		}
 		UpdateQuakemonMenu( quakemonMenu );
